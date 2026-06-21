@@ -1,0 +1,66 @@
+name: One-time Campaign Control Room rename
+
+on:
+  push:
+    paths:
+      - '.github/workflows/campaign-control-room-rename.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply naming standard
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          replacements = {
+              'index.html': [
+                  ('<title>Adonmo Campaign Ops V1.2.1</title>', '<title>Adonmo Campaign Control Room V1.2.1</title>'),
+                  ('content="Adonmo campaign operations dashboard V1.2.1 email-backed refresh"', 'content="Adonmo Campaign Control Room V1.2.1 email-backed refresh"'),
+                  ('<span>Campaign Ops</span><strong>V1.2.1 Email-backed Room</strong>', '<span>Campaign Control Room</span><strong>V1.2.1 Email-backed Core</strong>'),
+                  ('<h1>Campaign Intelligence Room</h1>', '<h1>Campaign Control Room</h1>'),
+                  ('"Adonmo Campaign Ops V1.2.1 - Email-backed Status"', '"Adonmo Campaign Control Room V1.2.1 - Email-backed Status"'),
+              ],
+              'v122.html': [
+                  ('<title>Adonmo Campaign Ops V1.2.2 Preview</title>', '<title>Adonmo Campaign Control Room V1.2.2 Preview</title>'),
+                  ('<span class="mono">Campaign Ops</span><strong>V1.2.2 Simplified Core</strong>', '<span class="mono">Campaign Control Room</span><strong>V1.2.2 Simplified Core</strong>'),
+                  ('<h1>Less dashboard. More clarity.</h1>', '<h1>Campaign Control Room</h1>'),
+                  ('A calmer version of the campaign tracker: one primary table, a short attention row, and a tucked-away archive for DAVP/CBC and already-executed government campaigns.', 'A focused campaign control view: one primary table, a short attention row, and a separate archive for DAVP/CBC and already-executed government campaigns.'),
+                  ('Keep the live dashboard clean by separating active work from historical archive.', 'Keep the control room clean by separating active work from the historical archive.'),
+                  ('The main object is the table: cleaner, calmer, and easier to scan.', 'The main object is the table: controlled, direct, and easier to scan.'),
+                  ('DAVP/CBC and already-executed campaigns sit here, away from daily ops noise.', 'DAVP/CBC and already-executed campaigns sit here, separated from daily operating work.'),
+              ],
+              'v123.html': [
+                  ('<title>Adonmo Campaign Operations Register V1.2.3</title>', '<title>Adonmo Campaign Control Room V1.2.3</title>'),
+                  ('<span class="mono">Campaign Operations</span><strong>Register V1.2.3 Preview</strong>', '<span class="mono">Campaign Control Room</span><strong>V1.2.3 Preview</strong>'),
+                  ('<h1>Campaign Operations Register</h1>', '<h1>Campaign Control Room</h1>'),
+                  ("['Purpose','Campaign operations register']", "['Purpose','Campaign Control Room']"),
+              ],
+          }
+          for filename, pairs in replacements.items():
+              path = Path(filename)
+              text = path.read_text()
+              for old, new in pairs:
+                  if old not in text:
+                      print(f'Skip missing expected text in {filename}: {old[:80]}')
+                      continue
+                  text = text.replace(old, new)
+              path.write_text(text)
+          PY
+      - name: Remove one-time workflow
+        run: git rm .github/workflows/campaign-control-room-rename.yml
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html v122.html v123.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Standardize Campaign Control Room naming"
+            git push
+          fi
