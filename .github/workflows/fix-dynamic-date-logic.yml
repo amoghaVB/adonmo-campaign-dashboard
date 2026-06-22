@@ -1,0 +1,70 @@
+name: One-time dynamic date logic fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-dynamic-date-logic.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-date-logic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply dynamic date logic
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, pairs):
+              p = Path(path)
+              text = p.read_text()
+              for old, new in pairs:
+                  if old not in text:
+                      raise SystemExit(f'Missing expected text in {path}: {old[:120]}')
+                  text = text.replace(old, new)
+              p.write_text(text)
+
+          replace('index.html', [
+              ('<div class="eyebrow">Today / 19 Jun 2026</div><h2>Operating posture</h2>', '<div class="eyebrow" id="todayStamp">Today</div><h2>Operating posture</h2>'),
+              ('const sheetUrl="https://docs.google.com/spreadsheets/d/1JFuX7GDZnjl1vFHaLBt1XDIwjlVVuglluAiWQ22dQKU/edit?usp=drivesdk",today=new Date("2026-06-19T00:00:00+05:30"),day=86400000,raw=', 'const sheetUrl="https://docs.google.com/spreadsheets/d/1JFuX7GDZnjl1vFHaLBt1XDIwjlVVuglluAiWQ22dQKU/edit?usp=drivesdk",todayParts=Object.fromEntries(new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).map(p=>[p.type,p.value])),today=new Date(todayParts.year+"-"+todayParts.month+"-"+todayParts.day+"T00:00:00+05:30"),day=86400000,raw='),
+              ('const $=id=>document.getElementById(id),fmt=d=>new Intl.DateTimeFormat("en-IN",{day:"2-digit",month:"short",year:"numeric"}).format(new Date(d+"T00:00:00+05:30")),money=v=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(v);', 'const $=id=>document.getElementById(id),fmt=d=>new Intl.DateTimeFormat("en-IN",{day:"2-digit",month:"short",year:"numeric"}).format(new Date(d+"T00:00:00+05:30")),todayLabel=new Intl.DateTimeFormat("en-IN",{day:"2-digit",month:"short",year:"numeric"}).format(today),money=v=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(v);'),
+              ('let score=c.status==="Completed"?96:100;if(c.proof==="Pending")score-=32;if(days>=0&&days<=3)score-=18;if(days===0)score-=12;', 'let score=c.status==="Completed"?96:100;if(c.proof==="Pending")score-=32;if(days<0&&c.status!=="Completed")score-=24;if(days>=0&&days<=3)score-=18;if(days===0)score-=12;'),
+              ('ending:days>=0&&days<=3,proofGap:c.proof==="Pending"', 'ending:days>=0&&days<=3,overdue:days<0&&c.status!=="Completed",proofGap:c.proof==="Pending"'),
+              ('function attention(){const ending=data.filter(c=>c.ending).sort((a,b)=>a.days-b.days),proof=data.filter(c=>c.proofGap),pop=data.filter(c=>c.pop),invoice=data.filter(c=>c.invoiceWatch&&c.status!=="Completed"),critical=data.filter(c=>(c.days>=0&&c.days<=1)||c.proofGap).sort((a,b)=>a.days-b.days);$("summary").textContent=data.filter(c=>c.health==="red").length+" red health, "+data.filter(c=>c.health==="amber").length+" amber, "+proof.length+" proof gap, "+ending.length+" ending soon.";$("heroPulse").innerHTML=[["Email-backed","NBCC Delhi was added from order/proof mail found on 19 Jun."],["Today","PFRDA Corp and WeWork end today; close signoff and final proof loops."],["Data hygiene","Latest order edits corrected PFRDA, HUDCO, and Registrar values."]]', 'function attention(){const ending=data.filter(c=>c.ending).sort((a,b)=>a.days-b.days),overdue=data.filter(c=>c.overdue).sort((a,b)=>a.days-b.days),proof=data.filter(c=>c.proofGap),pop=data.filter(c=>c.pop),invoice=data.filter(c=>c.invoiceWatch&&c.status!=="Completed"),critical=data.filter(c=>c.overdue||(c.days>=0&&c.days<=1)||c.proofGap).sort((a,b)=>a.days-b.days);$("summary").textContent=data.filter(c=>c.health==="red").length+" red health, "+data.filter(c=>c.health==="amber").length+" amber, "+proof.length+" proof gap, "+ending.length+" ending soon, "+overdue.length+" overdue closeout.";$("heroPulse").innerHTML=[["Email-backed","NBCC Delhi was added from order/proof mail found on 19 Jun."],["Closeout control","Ended campaigns move to closeout; upcoming campaigns stay in runway."],["Data hygiene","Latest order edits corrected PFRDA, HUDCO, and Registrar values."]]'),
+              ('function reportText(){const nl=String.fromCharCode(10),ending=data.filter(c=>c.ending).map(c=>c.client+" - "+c.name+" ("+endLabel(c)+")"),red=data.filter(c=>c.health==="red"),amber=data.filter(c=>c.health==="amber"),proof=data.filter(c=>c.proofGap);return ["Adonmo Campaign Control Room V1.2.1 - Email-backed Status","Date: 19 Jun 2026"', 'function reportText(){const nl=String.fromCharCode(10),ending=data.filter(c=>c.ending).map(c=>c.client+" - "+c.name+" ("+endLabel(c)+")"),overdue=data.filter(c=>c.overdue).map(c=>c.client+" - "+c.name+" ("+endLabel(c)+")"),red=data.filter(c=>c.health==="red"),amber=data.filter(c=>c.health==="amber"),proof=data.filter(c=>c.proofGap);return ["Adonmo Campaign Control Room V1.2.1 - Email-backed Status","Date: "+todayLabel'),
+              ('"Ending soon:","- "+(ending.join(nl+"- ")||"None"),"","Health watch:"', '"Ending soon:","- "+(ending.join(nl+"- ")||"None"),"","Overdue closeout:","- "+(overdue.join(nl+"- ")||"None"),"","Health watch:"'),
+              ('function runway(list){const active=list.filter(c=>c.status!=="Completed").sort((a,b)=>a.days-b.days).slice(0,8),max=Math.max(...active.map(c=>Math.max(c.days,0)),1);$("runway").innerHTML=active.map(c=>{const w=Math.max(8,Math.round((Math.max(c.days,0)/max)*100));', 'function runway(list){const active=list.filter(c=>c.status!=="Completed"&&c.days>=0).sort((a,b)=>a.days-b.days).slice(0,8);if(!active.length){$("runway").innerHTML=\'<div class="empty">No upcoming flight endings in this view.</div>\';return}const max=Math.max(...active.map(c=>c.days),1);$("runway").innerHTML=active.map(c=>{const w=Math.max(8,Math.round((c.days/max)*100));'),
+              ('["sheetTop","sheetHero"].forEach(id=>$(id).href=sheetUrl);options();metric();attention();health();views();$("reportText").value=reportText();', '["sheetTop","sheetHero"].forEach(id=>$(id).href=sheetUrl);$("todayStamp").textContent="Today / "+todayLabel;options();metric();attention();health();views();$("reportText").value=reportText();'),
+              ('"priority":"Today","action":"Collect final signoff today and check Pune/Delhi creative update threads."', '"priority":"Closeout","action":"Collect final signoff and check Pune/Delhi creative update threads."'),
+              ("<span class=\"chip\">'+c.priority+'</span><span class=\"chip\">'+c.status+'</span>", "<span class=\"chip\">'+endLabel(c)+'</span><span class=\"chip\">'+c.status+'</span>"),
+              ('c.days>1?c.days+" days left":"Ended "+Math.abs(c.days)+" days ago"', 'c.days>1?c.days+" days left":Math.abs(c.days)===1?"Ended 1 day ago":"Ended "+Math.abs(c.days)+" days ago"'),
+          ])
+
+          dynamic_today = 'todayParts=Object.fromEntries(new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).map(p=>[p.type,p.value])),today=new Date(todayParts.year+"-"+todayParts.month+"-"+todayParts.day+"T00:00:00+05:30")'
+          replace('v122.html', [
+              (",today=new Date('2026-06-21T00:00:00+05:30'),day=86400000", ',' + dynamic_today + ',day=86400000'),
+              ('needs=active.filter(c=>/pending|reminder|partial/i.test(c.invoice)||days(c)<=3);', 'needs=active.filter(c=>/pending|reminder|partial/i.test(c.invoice)||(days(c)>=0&&days(c)<=3)||days(c)<0);'),
+          ])
+
+          replace('v123.html', [
+              ('const sheet="https://docs.google.com/spreadsheets/d/1JFuX7GDZnjl1vFHaLBt1XDIwjlVVuglluAiWQ22dQKU/edit?usp=drivesdk",today=new Date("2026-06-20T18:30:00.000Z"),day=86400000;', 'const sheet="https://docs.google.com/spreadsheets/d/1JFuX7GDZnjl1vFHaLBt1XDIwjlVVuglluAiWQ22dQKU/edit?usp=drivesdk",todayParts=Object.fromEntries(new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).map(p=>[p.type,p.value])),today=new Date(todayParts.year+"-"+todayParts.month+"-"+todayParts.day+"T00:00:00+05:30"),day=86400000;'),
+              ("if(d<0)return 'Closeout due';if(d===0)return 'Ends today';", "if(d<0)return 'Ended / closeout due';if(d===0)return 'Ends today';"),
+              ("||days(r)<=3", "||(days(r)>=0&&days(r)<=3)||days(r)<0"),
+          ])
+          PY
+      - name: Remove one-time workflow
+        run: git rm .github/workflows/fix-dynamic-date-logic.yml
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html v122.html v123.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Fix dynamic campaign date logic"
+            git push
+          fi
