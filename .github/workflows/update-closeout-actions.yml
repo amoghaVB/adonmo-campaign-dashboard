@@ -1,0 +1,93 @@
+name: Update closeout action view
+
+on:
+  push:
+    paths:
+      - .github/workflows/update-closeout-actions.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-closeout-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply closeout action updates
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          function updateFile(path, replacements) {
+            let text = fs.readFileSync(path, 'utf8');
+            for (const [from, to] of replacements) {
+              if (!text.includes(from)) {
+                throw new Error(`${path}: missing expected text: ${from}`);
+              }
+              text = text.split(from).join(to);
+            }
+            fs.writeFileSync(path, text);
+          }
+
+          updateFile('index.html', [
+            ['Exception board', 'Action control'],
+            ['Only the things that can bite', 'Closeout and proof work'],
+            ['Four operational queues for daily follow-up. This is the part that should eventually feed reminders.', 'Recently ended campaigns are treated as closeout work first: proof pack, display report acceptance, invoice follow-up, and archive status.'],
+            ['Critical today', 'Closeout due'],
+            ['<option value="ending">Ending soon</option><option value="proof">Proof gaps</option>', '<option value="ending">Ending soon</option><option value="overdue">Closeout due</option><option value="proof">Proof gaps</option>'],
+            ['<button class="view-btn" data-view="today">Today</button>', '<button class="view-btn" data-view="closeout">Closeout due</button>'],
+            ['"status":"Running - Ending Soon","start":"2026-06-07","end":"2026-06-20"', '"status":"Closeout due","start":"2026-06-07","end":"2026-06-20"'],
+            ['"status":"Running - Ending Soon","start":"2026-06-14","end":"2026-06-19"', '"status":"Closeout due","start":"2026-06-14","end":"2026-06-19"'],
+            ['"status":"Running","start":"2026-06-11","end":"2026-06-23"', '"status":"Ending today","start":"2026-06-11","end":"2026-06-23"'],
+            ['"status":"Running","start":"2026-06-08","end":"2026-06-23"', '"status":"Ending today","start":"2026-06-08","end":"2026-06-23"'],
+            ['"status":"Running - Ending Soon","start":"2026-06-11","end":"2026-06-21"', '"status":"Closeout due","start":"2026-06-11","end":"2026-06-21"'],
+            ['"status":"Running - Ending Soon","start":"2026-06-07","end":"2026-06-22"', '"status":"Closeout due","start":"2026-06-07","end":"2026-06-22"'],
+            ['"priority":"Today"', '"priority":"Closeout"'],
+            ['Prepare closeout and final proof check after 20 Jun.', 'Close invoice review, attach final proof pack, and mark closeout done.'],
+            ['Collect final signoff and check Pune/Delhi creative update threads.', 'Confirm final report acceptance, invoice reminder, and Pune/Delhi creative update closure.'],
+            ['Confirm final proof closure across WeWork inventory.', 'Confirm WeWork approval trail, final creative reference, and invoice follow-up.'],
+            ['Keep proof tracker current for Surat, Pune, and high-volume metros.', 'Prepare end-of-flight closeout today; keep proof tracker current for high-volume metros.'],
+            ['Watch Ahmedabad POP gap notes and delayed Hyderabad sample.', 'Prepare final city proof closure today, especially Kochi and Ahmedabad.'],
+            ['Close out after 21 Jun.', 'Archive FOC proof and mark closeout complete.'],
+            ['Find or request proof/sample folder.', 'Confirm display report acceptance and chase missing proof/sample folder.'],
+            ['Ended campaigns move to closeout; upcoming campaigns stay in runway.', 'NHPC, PFRDA, NFDC and NTPC are closeout due; HUDCO and PGCIL end today and need final proof/invoice readiness.'],
+            ['(at==="ending"&&c.ending)||(at==="proof"&&c.proofGap)||(at==="pop"&&c.pop)||(at==="invoice"&&c.invoiceWatch)', '(at==="ending"&&c.ending)||(at==="overdue"&&(c.overdue||c.days===0))||(at==="proof"&&c.proofGap)||(at==="pop"&&c.pop)||(at==="invoice"&&c.invoiceWatch)'],
+            ['if(v==="today")$("attentionFilter").value="ending";if(v==="proof")', 'if(v==="closeout")$("attentionFilter").value="overdue";if(v==="proof")'],
+          ]);
+
+          updateFile('v122.html', [
+            ['Only what needs a look', 'Closeout, finance, archive'],
+            ['No exception-board sprawl. Three small notes, then the table.', 'Short operational notes first, then the campaign table.'],
+            ['Close invoice review and final proof pack.', 'Close invoice review, attach final proof pack, and mark closeout done.'],
+            ['Confirm revised creative replacement and close end-date report.', 'Confirm final report acceptance, invoice reminder, and Pune/Delhi creative update closure.'],
+            ['Confirm WeWork approval trail and final creative reference.', 'Confirm WeWork approval trail, final creative reference, and invoice follow-up.'],
+            ['Keep POP/report sequence current through 23 Jun.', 'Prepare end-of-flight closeout today; keep proof tracker current for high-volume metros.'],
+            ['Verify final city proofs for Kochi and Ahmedabad.', 'Prepare final city proof closure today, especially Kochi and Ahmedabad.'],
+            ['Close FOC proof archive after campaign end.', 'Archive FOC proof and mark closeout complete.'],
+            ['Confirm client has accepted display report.', 'Confirm display report acceptance and chase missing proof/sample folder.'],
+            ["['Closing','PFRDA, NHPC, NFDC and NTPC need closeout attention.']", "['Closeout due','NHPC, PFRDA, NFDC and NTPC are overdue; HUDCO and PGCIL end today.']"],
+            ["return x<0?'Ended':x===0?'Ends today':x<=3?'Closing':c.status", "return x<0?'Ended / closeout due':x===0?'Ends today':x<=3?'Closing':c.status"],
+          ]);
+
+          updateFile('v123.html', [
+            ['Complete invoice review and final closeout proof pack.', 'Close invoice review, attach final proof pack, and mark closeout done.'],
+            ['Confirm revised creative replacement and final report acceptance.', 'Confirm final report acceptance, invoice reminder, and Pune/Delhi creative update closure.'],
+            ['Confirm WeWork approval trail and final creative reference.', 'Confirm WeWork approval trail, final creative reference, and invoice follow-up.'],
+            ['"HUDCO","Residential","Active","2026-06-11"', '"HUDCO","Residential","Ending today","2026-06-11"'],
+            ['Keep proof and POP sequence current through campaign end.', 'Prepare end-of-flight closeout today; keep proof tracker current for high-volume metros.'],
+            ['"PGCIL","Residential","Active","2026-06-08"', '"PGCIL","Residential","Ending today","2026-06-08"'],
+            ['Verify city-level proof closure for Kochi and Ahmedabad.', 'Prepare final city proof closure today, especially Kochi and Ahmedabad.'],
+            ['"NFDC","Residential","Ends today","2026-06-11"', '"NFDC","Residential","Closeout due","2026-06-11"'],
+            ['Archive proof for FOC campaign after end date.', 'Archive FOC proof and mark closeout complete.'],
+            ['Confirm client acceptance of display report.', 'Confirm display report acceptance and chase missing proof/sample folder.'],
+            ['NHPC, PFRDA, NFDC and NTPC require proof/report/invoice closure.', 'NHPC, PFRDA, NFDC and NTPC are overdue; HUDCO and PGCIL end today and need proof/invoice readiness.'],
+          ]);
+          NODE
+
+          rm .github/workflows/update-closeout-actions.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html v122.html v123.html .github/workflows/update-closeout-actions.yml
+          git commit -m "Update closeout action view"
+          git push
